@@ -33,7 +33,7 @@
         '    </div>',
         '    <div id="loadout-contents">',
         '      <div ng-repeat="value in vm.types track by value" class="loadout-{{ value }} loadout-bucket" ng-if="vm.loadout.items[value].length">',
-        '        <div ng-repeat="item in vm.loadout.items[value] | sortItems:vm.itemSort track by item.index" ng-click="vm.equip(item)" id="loadout-item-{{:: $id }}" class="loadout-item">',
+        '        <div ng-repeat="item in vm.loadout.items[value] | sortItems:vm.settings.itemSort track by item.index" ng-click="vm.equip(item)" id="loadout-item-{{:: $id }}" class="loadout-item">',
         '          <dim-simple-item item-data="item"></dim-simple-item>',
         '          <div class="close" ng-click="vm.remove(item, $event); vm.form.name.$rollbackViewValue(); $event.stopPropagation();"></div>',
         '          <div class="equipped" ng-show="item.equipped"></div>',
@@ -45,7 +45,7 @@
       ].join('')
     };
 
-    function Link(scope, element, attrs) {
+    function Link(scope) {
       var vm = scope.vm;
 
       vm.classTypeValues = [{
@@ -62,25 +62,31 @@
         value: 2
       }];
 
-      scope.$on('dim-create-new-loadout', function(event, args) {
+      scope.$on('dim-create-new-loadout', function() {
         vm.show = true;
         dimLoadoutService.dialogOpen = true;
+        vm.loadout = angular.copy(vm.defaults);
       });
 
-      scope.$on('dim-delete-loadout', function(event, args) {
+      scope.$on('dim-delete-loadout', function() {
         vm.show = false;
         dimLoadoutService.dialogOpen = false;
         vm.loadout = angular.copy(vm.defaults);
+      });
+
+      scope.$watchCollection('vm.originalLoadout.items', function() {
+        vm.loadout = angular.copy(vm.originalLoadout);
       });
 
       scope.$on('dim-edit-loadout', function(event, args) {
         if (args.loadout) {
           vm.show = true;
           dimLoadoutService.dialogOpen = true;
+          vm.originalLoadout = args.loadout;
           vm.loadout = angular.copy(args.loadout);
           if (args.equipAll) {
             _.each(vm.loadout.items, function(item) {
-              if(item[0]) {
+              if (item[0]) {
                 item[0].equipped = true;
               }
             });
@@ -91,13 +97,19 @@
       scope.$on('dim-store-item-clicked', function(event, args) {
         vm.add(args.item, args.clickEvent);
       });
+
+      scope.$on('dim-active-platform-updated', function() {
+        vm.show = false;
+      });
     }
   }
 
-  LoadoutCtrl.$inject = ['dimLoadoutService', 'dimCategory', 'dimItemTier', 'toaster', 'dimPlatformService', 'dimSettingsService', '$scope'];
+  LoadoutCtrl.$inject = ['dimLoadoutService', 'dimCategory', 'dimItemTier', 'toaster', 'dimPlatformService', 'dimSettingsService'];
 
-  function LoadoutCtrl(dimLoadoutService, dimCategory, dimItemTier, toaster, dimPlatformService, dimSettingsService, $scope) {
+  function LoadoutCtrl(dimLoadoutService, dimCategory, dimItemTier, toaster, dimPlatformService, dimSettingsService) {
     var vm = this;
+
+    vm.settings = dimSettingsService;
 
     vm.types = _.chain(dimCategory)
       .values()
@@ -142,12 +154,12 @@
 
         clone.amount = Math.min(clone.amount, $event.shiftKey ? 5 : 1);
 
-        var dupe = _.findWhere(typeInventory, {hash: clone.hash, id: clone.id});
+        var dupe = _.findWhere(typeInventory, { hash: clone.hash, id: clone.id });
 
         var maxSlots = 10;
         if (item.type === 'Material') {
           maxSlots = 20;
-        } else if(item.type === 'Consumable') {
+        } else if (item.type === 'Consumable') {
           maxSlots = 19;
         }
 
@@ -182,7 +194,7 @@
       var typeInventory = vm.loadout.items[discriminator] = (vm.loadout.items[discriminator] || []);
 
       var index = _.findIndex(typeInventory, function(i) {
-        return i.hash == item.hash && i.id === item.id;
+        return i.hash === item.hash && i.id === item.id;
       });
 
       if (index >= 0) {
@@ -200,8 +212,6 @@
 
     vm.equip = function equip(item) {
       if (item.equipment) {
-        var equipped = vm.loadout.equipped;
-
         if ((item.type === 'Class') && (!item.equipped)) {
           item.equipped = true;
         } else if (item.equipped) {
@@ -212,7 +222,7 @@
               .values()
               .flatten()
               .findWhere({
-                sort: item.sort,
+                sort: item.bucket.sort,
                 tier: dimItemTier.exotic,
                 equipped: true
               })
@@ -238,15 +248,5 @@
         }
       }
     };
-
-    dimSettingsService.getSetting('itemSort').then(function(sort) {
-      vm.itemSort = sort;
-    });
-
-    $scope.$on('dim-settings-updated', function(event, settings) {
-      if (_.has(settings, 'itemSort')) {
-        vm.itemSort = settings.itemSort;
-      }
-    });
   }
 })();

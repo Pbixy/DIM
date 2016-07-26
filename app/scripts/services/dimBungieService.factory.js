@@ -12,7 +12,7 @@
     var platformPromise = null;
     var membershipPromise = null;
 
-    $rootScope.$on('dim-active-platform-updated', function(event, args) {
+    $rootScope.$on('dim-active-platform-updated', function() {
       tokenPromise = null;
       platformPromise = null;
       membershipPromise = null;
@@ -25,8 +25,9 @@
       transfer: transfer,
       equip: equip,
       equipItems: equipItems,
-      setLockState: setLockState,
-      getXur: getXur
+      setItemState: setItemState,
+      getXur: getXur,
+      getVendors: getVendors
     };
 
     return service;
@@ -38,7 +39,7 @@
     }
 
     function handleErrors(response) {
-      if (response.statue === 503) {
+      if (response.status === 503) {
         return $q.reject(new Error("Bungie.net is down."));
       }
       if (response.status < 200 || response.status >= 400) {
@@ -49,6 +50,7 @@
       if (errorCode === 36) {
         return $q.reject(new Error('Bungie API throttling limit exceeded. Please wait a bit and then retry.'));
       } else if (errorCode === 99) {
+        openBungieNetTab();
         return $q.reject(new Error('Please log into Bungie.net in order to use this extension.'));
       } else if (errorCode === 5) {
         return $q.reject(new Error('Bungie.net servers are down for maintenance.'));
@@ -100,12 +102,18 @@
       return a;
     }
 
+    function openBungieNetTab() {
+      chrome.tabs.create({
+        url: 'http://bungie.net',
+        active: true
+      });
+    }
     /************************************************************************************************************************************/
 
     function getBnetCookies() {
       return $q(function(resolve, reject) {
         chrome.cookies.getAll({
-          'domain': '.bungie.net'
+          domain: '.bungie.net'
         }, getAllCallback);
 
         function getAllCallback(cookies) {
@@ -128,14 +136,15 @@
               return cookie.name === 'bungled';
             });
 
-            if (!_.isUndefined(cookie)) {
+            if (cookie) {
               resolve(cookie.value);
             } else {
+              openBungieNetTab();
               reject(new Error('Please log into Bungie.net in order to use this extension.'));
             }
           });
         })
-        .catch(function(error) {
+        .catch(function() {
           tokenPromise = null;
         });
 
@@ -155,7 +164,7 @@
             message = 'You may not be connected to the internet.';
           }
 
-          toaster.pop('error', 'Bungie.net Error', message);
+          toaster.pop('error', 'Bungie.net Error', message, 0);
 
           return $q.reject(e);
         });
@@ -245,7 +254,7 @@
     function getBnetCharactersRequest(token, platform, membershipId) {
       return {
         method: 'GET',
-        url: 'https://www.bungie.net/Platform/Destiny/Tiger' + (platform.type == 1 ? 'Xbox' : 'PSN') + '/Account/' + membershipId + '/',
+        url: 'https://www.bungie.net/Platform/Destiny/Tiger' + (platform.type === 1 ? 'Xbox' : 'PSN') + '/Account/' + membershipId + '/',
         headers: {
           'X-API-Key': apiKey,
           'x-csrf': token
@@ -263,8 +272,8 @@
         c.inventory = response.data.Response.data.inventory;
 
         return {
-          'id': c.characterBase.characterId,
-          'base': c
+          id: c.characterBase.characterId,
+          base: c
         };
       });
     }
@@ -278,6 +287,71 @@
         url: 'https://www.bungie.net/Platform/Destiny/Advisors/Xur/',
         headers: {
           'X-API-Key': apiKey
+        }
+      })
+      .then(function(request) {
+        return $http(request);
+      })
+      .then(handleErrors)
+      .then(function(response) {
+        return response.data.Response.data;
+      });
+    }
+
+    function getVendors(platform) {
+      var data = {
+        token: null,
+        membershipId: null
+      };
+
+      var addTokenToData = assignResultAndForward.bind(null, data, 'token');
+      var addMembershipIdToData = assignResultAndForward.bind(null, data, 'membershipId');
+      var addCharactersToData = assignResultAndForward.bind(null, data, 'characters');
+      var getMembershipPB = getMembership.bind(null, platform);
+      var getCharactersPB = getCharacters.bind(null, platform);
+
+      var promise = getBungleToken()
+        .then(addTokenToData)
+        .then(getMembershipPB)
+        .then(addMembershipIdToData)
+        .then(getCharactersPB)
+        .then(addCharactersToData)
+        .then(function() {
+          // Titan van, Hunter van, Warlock van, Dead orb, Future war, New mon, Eris Morn, Cruc hand, Speaker, Variks, Exotic Blue
+          var vendorHashes = ['1990950', '3003633346', '1575820975', '3611686524', '1821699360', '1808244981', '174528503', '3746647075', '2680694281', '1998812735', '3902439767'];
+          var promises = [];
+          _.each(vendorHashes, function(vendorHash) {
+            _.each(data.characters, function(character) {
+              promises.push(getVendor(data.token, platform, data.membershipId, character, vendorHash));
+            });
+          });
+          return $q.all(promises).then(function(vendorData) {
+            // Get banner if it's up
+            var bannerPromises = [];
+            _.each(data.characters, function(character) {
+              bannerPromises.push(getVendor(data.token, platform, data.membershipId, character, '242140165'));
+            });
+            return $q.all(bannerPromises).then(function(bannerData) {
+              return $q.resolve(vendorData.concat(bannerData));
+            });
+          });
+        })
+        .catch(function(e) {
+          toaster.pop('error', 'Bungie.net Error', e.message);
+
+          return $q.reject(e);
+        });
+
+      return promise;
+    }
+
+    function getVendor(token, platform, membershipId, character, vendorId) {
+      return $q.when({
+        method: 'GET',
+        url: 'https://www.bungie.net/platform/Destiny/' + platform.type + '/MyAccount/Character/' + character.id + '/Vendor/' + vendorId + '/?lc=en&fmt=true&lcin=true&definitions=true',
+        headers: {
+          'X-API-Key': apiKey,
+          'x-csrf': token
         }
       })
       .then(function(request) {
@@ -312,7 +386,8 @@
         .then(function() {
           return $q.all([
             getDestinyInventories(data.token, platform, data.membershipId, data.characters),
-            getDestinyProgression(data.token, platform, data.membershipId, data.characters)
+            getDestinyProgression(data.token, platform, data.membershipId, data.characters),
+            getDestinyAdvisors(data.token, platform, data.membershipId, data.characters)
           ]).then(function(data) {
             return $q.resolve(data[0]);
           });
@@ -421,6 +496,38 @@
 
     /************************************************************************************************************************************/
 
+    function getCharacterAdvisorsRequest(token, platform, membershipId, character) {
+      return {
+        method: 'GET',
+        url: 'https://www.bungie.net/Platform/Destiny/' + platform.type + '/Account/' + membershipId + '/Character/' + character.id + '/Advisors/V2/?definitions=false',
+        headers: {
+          'X-API-Key': apiKey,
+          'x-csrf': token
+        },
+        withCredentials: true
+      };
+    }
+
+    function processAdvisorsResponse(character, response) {
+      character.advisors = response.data.Response.data;
+      return character;
+    }
+
+    function getDestinyAdvisors(token, platform, membershipId, characters) {
+      var promises = characters.map(function(character) {
+        var processPB = processAdvisorsResponse.bind(null, character);
+
+        return $q.when(getCharacterAdvisorsRequest(token, platform, membershipId, character))
+          .then($http)
+          .then(handleErrors)
+          .then(processPB);
+      });
+
+      return $q.all(promises);
+    }
+
+    /************************************************************************************************************************************/
+
     function transfer(item, store, amount) {
       var platform = dimState.active;
       var data = {
@@ -451,7 +558,7 @@
       return promise;
     }
 
-    //Handle "DestinyUniquenessViolation" (1648)
+    // Handle "DestinyUniquenessViolation" (1648)
     function handleUniquenessViolation(response, item, store) {
       if (response && response.data && response.data.ErrorCode === 1648) {
         toaster.pop('warning', 'Item Uniqueness', [
@@ -537,10 +644,9 @@
 
     // Returns a list of items that were successfully equipped
     function equipItems(store, items) {
-
       // Sort exotics to the end. See https://github.com/DestinyItemManager/DIM/issues/323
       items = _.sortBy(items, function(i) {
-        return i.tier === 'Exotic' ? 1 : 0;
+        return i.isExotic ? 1 : 0;
       });
 
       var platform = dimState.active;
@@ -581,7 +687,7 @@
           var data = response.data.Response;
           store.updateCharacterInfo(data.summary);
           return _.select(items, function(i) {
-            var item = _.find(data.equipResults, {itemInstanceId: i.id});
+            var item = _.find(data.equipResults, { itemInstanceId: i.id });
             return item && item.equipStatus === 1;
           });
         });
@@ -591,7 +697,12 @@
 
     /************************************************************************************************************************************/
 
-    function setLockState(item, store, lockState) {
+    function setItemState(item, store, lockState, type) {
+      switch (type) {
+      case 'lock': type = 'SetLockState'; break;
+      case 'track': type = 'SetQuestTrackedState'; break;
+      }
+
       var platform = dimState.active;
       var data = {
         token: null,
@@ -610,7 +721,7 @@
           return store;
         })
         .then(function(store) {
-          return getSetLockStateRequest(data.token, platform.type, item, store, lockState);
+          return getSetItemStateRequest(data.token, platform.type, item, store, lockState, type);
         })
         .then(retryOnThrottled)
         .then(handleErrors);
@@ -618,10 +729,10 @@
       return promise;
     }
 
-    function getSetLockStateRequest(token, membershipType, item, store, lockState) {
+    function getSetItemStateRequest(token, membershipType, item, store, lockState, type) {
       return {
         method: 'POST',
-        url: 'https://www.bungie.net/Platform/Destiny/SetLockState/',
+        url: 'https://www.bungie.net/Platform/Destiny/' + type + '/',
         headers: {
           'X-API-Key': apiKey,
           'x-csrf': token,

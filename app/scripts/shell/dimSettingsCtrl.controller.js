@@ -3,36 +3,35 @@
 
   angular.module('dimApp').controller('dimSettingsCtrl', SettingsController);
 
-  SettingsController.$inject = ['dimSettingsService', '$scope'];
+  SettingsController.$inject = ['dimSettingsService', '$scope', 'SyncService', 'dimCsvService', 'dimStoreService'];
 
-  function SettingsController(settings, $scope) {
-    var vm = $scope.vm = {};
+  function SettingsController(settings, $scope, SyncService, dimCsvService, dimStoreService) {
+    var vm = this;
 
-    vm.charColOptions = [
-      { id: 3, name: '3' },
-      { id: 4, name: '4' },
-      { id: 5, name: '5' }
-    ];
+    $scope.$watchCollection('vm.settings', function() {
+      settings.save();
+    });
 
-    vm.vaultColOptions = [
-      { id: 4, name: '4' },
-      { id: 5, name: '5' },
-      { id: 6, name: '6' },
-      { id: 7, name: '7' },
-      { id: 8, name: '8' },
-      { id: 9, name: '9' },
-      { id: 10, name: '10' },
-      { id: 11, name: '11' },
-      { id: 12, name: '12' }
-    ];
+    vm.charColOptions = _.range(3, 6).map((num) => ({ id: num, name: num }));
+    vm.vaultColOptions = _.range(5, 21).map((num) => ({ id: num, name: num }));
+    vm.vaultColOptions.unshift({ id: 999, name: 'Auto' });
 
-    settings.getSetting()
-      .then(function(s) {
-        vm.settings = s;
-      });
+    vm.settings = settings;
 
-    vm.save = function(key) {
-      settings.saveSetting(key, vm.settings[key]);
+    vm.showSync = function() {
+      return SyncService.drive();
+    };
+
+    vm.driveSync = function() {
+      SyncService.authorize();
+    };
+
+    vm.downloadWeaponCsv = function(){
+      dimCsvService.downloadCsvFiles(dimStoreService.getStores(), "Weapons");
+    };
+
+    vm.downloadArmorCsv = function(){
+      dimCsvService.downloadCsvFiles(dimStoreService.getStores(), "Armor");
     };
   }
 })();

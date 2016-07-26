@@ -1,26 +1,107 @@
+# Next
+
+* Show current vendor items being sold
+* Move popup won't pop up under the header anymore.
+* If you have an open loadout, and you click "Create loadout", it switches to the new loadout now instead of leaving the previous loadout open.
+* DIM is once again faster.
+* The loadout editor won't stay visible when you change platforms.
+* Fixed a lot of bugs that would show all your items as new.
+* New-ness of items persists across reloads and syncs across your Chrome profile.
+* New button to clear all new items. Keyboard shortcut is "x".
+* Help dialog for keyboard shortcuts. Triggered with "?".
+* When you have two characters of the same class, applying a loadout with a subclass will work all the time now.
+
+# 3.8.3
+
+* Fix move popup not closing when drag-moving an item.
+* Added ability to and filters for track or untracking quests and bounties.
+* Fix issue where some sets would be missing from the loadout builder.
+* Fixed #660 where postmaster items would not appear in the Postmaster section of DIM, ie Sterling Treasure after the reset.
+* Fixed #697 where loadouts will no longer remove the loadouts for the opposite platform.
+* Fix an issue where loadouts will not show any items, or transfer any items.
+* Add option to show new item overlay animation
+
+# 3.8.2
+
+* Update filter list to include quality/percentage filters
+* Add year column to CSV export scripts
+* When you have filtered items with a search, you can select a new search loadout option in the loadout menu to transfer matching items.
+* The screen no longer jumps around when clicking on items, and the item details popup should always be visible.
+* Dialogs should be sized better now.
+* Fix character order in move popup buttons.
+* Restored the ability to set a maximum vault size. "Auto" (full width) is still an option, and is the default.
+* Armor quality is shown in Xur, loadouts, and the infusion dialog if advanced stats is turned on.
+* "Take" stackables works again.
+
+# 3.8.1
+
+* Added steps to Moments of Triumph popup (and other record books.)
+* Fixed wobbly refresh icon.
+* Fixed single item stat percentages.
+* Fixed armor export script.
+* Possible fix for loadout builder.
+
+# 3.8.0
+
+* Loadout builder redesign and major performance enchancements.
+* Items in the postmaster now have quality ratings, can use the infusion fuel finder, show up in the infusion fuel finder, compare against currently equipped items, etc. They behave just like a normal item except you can't move them and they're in a different spot.
+* The vault width preference has been removed - the vault now always takes up all the remaining space on the screen.
+* Section headers don't repeat themselves anymore.
+* Drop zones for items are larger.
+* Returning from the min-max tool no longer greets you with a blank, item-less screen.
+* Fixed a bug where loadouts were not properly restricted to the platform they were created for.
+* Xur's menu item will properly disappear when he leaves for the week.
+* New items are marked with a "shiny" animation, and there are notifications when new items appear.
+* The loadout menu may expand to fill the height of the window, but no more. The scrollbar looks nicer too.
+* Items can now be made larger (or smaller) in settings. Pick the perfect size for your screen!
+* The item info popup has a new header design. Let us know what you think!
+* Changing settings is faster.
+* You can now download your weapon and armor data as spreadsheets for the true data nerds among us.
+* The settings dialog is less spacious.
+* Engrams and items in the postmaster can now be locked (and unlocked).
+* The buttons on the move item popup are now grouped together by character.
+* When the "Hide Unfiltered Items while Filtering" option is on, things look a lot nicer than they did.
+* DIM is generally just a little bit snappier, especially when scrolling.
+* Clicking the icon to open DIM will now switch to an active DIM tab if it's already running.
+* Bungie.net will open in a new tab as a convenience for expired cookies.
+* Items in the Postmaster are sorted by the order you got them, so you know what'll get bumped when your postmaster is full.
+* Clicking the loadout builder button again, or the DIM logo, will take you back to the main screen.
+* You may now order your characters by the reverse of the most recent, so the most recent character is next to the vault.
+
+# 3.7.4
+
+* Removed the option to hide or show the primary stat of items - it's always shown now.
+* Add mode selection full/fast for users willing to wait for all best sets.
+* Loadout menus are now scrollable for users with over 8 custom loadouts on a single character.
+* Changing the character sort order now applies live, rather than requiring a refresh.
+* Use most recently logged in player to start with loadout builder.
+* Search queries will exclude the token `" and "` as some users were including that when chaining multiple filters.
+* Fix UI issue on move popup dialog that had some numbers expanding outside the dialog.
+* Consolidate beta icons to the icons folder.
+
 # 3.7.3
 
- * Fix rounding error that prevented some loadout sets from showing up.
- * Added filter for quality rating, ex - quality:>90 or percentage:<=94
+* Fix rounding error that prevented some loadout sets from showing up.
+* Added filter for quality rating, ex - quality:>90 or percentage:<=94
 
 # 3.7.2
 
- * Always show locked section in loadout builder.
- * Fix NaN issue in loadout builder.
- * Fix issues with 'create loadout' button in loadout builder.
- * For item lvling dont prefer unlvled equiped items on other characters.
- * Various Loadout builder bug fixes and performance updates.
+* Always show locked section in loadout builder.
+* Fix NaN issue in loadout builder.
+* Fix issues with 'create loadout' button in loadout builder.
+* For item lvling dont prefer unlvled equiped items on other characters.
+* Various Loadout builder bug fixes and performance updates.
 
 # 3.7.1
 
- * Various Loadout builder bug fixes and performance updates.
+* Various Loadout builder bug fixes and performance updates.
 
 # 3.7.0
 
- * Added new armor/loadout tier builder.
- * Fix for all numbers appearing red in comparison view.
- * Updated to latest stat estimation forumla.
- * Use directive for percentage width.
+* Added new armor/loadout tier builder.
+* Fix for all numbers appearing red in comparison view.
+* Updated to latest stat estimation forumla.
+* Use directive for percentage width.
 
 # 3.6.5
 
