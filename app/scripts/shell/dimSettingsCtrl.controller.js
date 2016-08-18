@@ -28,10 +28,12 @@
 
     vm.downloadWeaponCsv = function(){
       dimCsvService.downloadCsvFiles(dimStoreService.getStores(), "Weapons");
+      _gaq.push(['_trackEvent', 'Download CSV', 'Weapons']);
     };
 
     vm.downloadArmorCsv = function(){
       dimCsvService.downloadCsvFiles(dimStoreService.getStores(), "Armor");
+      _gaq.push(['_trackEvent', 'Download CSV', 'Armor']);
     };
   }
 })();

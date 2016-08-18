@@ -2,6 +2,8 @@
 /* css-indent-offset: 2 */
 /* End:                 */
 
+@import "variables.scss";
+
 :root {
   --item-size: 44px;
   --character-columns: 3;
@@ -33,9 +35,13 @@ div:focus, span:focus {
 }
 
 .new_overlay_overflow {
-  width: var(--item-size);
-  height: var(--item-size);
-  overflow: hidden;
+  display: none;
+  .show-new-items & {
+    display: block;
+    width: var(--item-size);
+    height: var(--item-size);
+    overflow: hidden;
+  }
 }
 
 /**
@@ -378,20 +384,22 @@ body {
   }
 }
 
-.ngdialog {
-  ::-webkit-scrollbar {
-    width: 3px;
-  }
+::-webkit-scrollbar {
+  width: 3px;
 
-  ::-webkit-scrollbar-track {
-    background: rgba(228, 228, 228, 0.2);
-    border-radius: 3px;
+  &:horizontal {
+    height: 3px;
   }
+}
 
-  ::-webkit-scrollbar-thumb {
-    background: #E4E4E4;
-    border-radius: 3px;
-  }
+::-webkit-scrollbar-track {
+  background: rgba(228, 228, 228, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E4E4E4;
+  border-radius: 3px;
 }
 
 #system {
@@ -465,6 +473,7 @@ img {
 }
 
 .title {
+  cursor: pointer;
   flex: 1;
   padding: 0 16px;
   background-color: #353535;
@@ -482,6 +491,9 @@ img {
   }
   .icon {
     width: 30px;
+  }
+  .collapse {
+    margin-left: -7px;
   }
 }
 
@@ -506,7 +518,7 @@ img {
 
 .sub-section {
   flex: 1;
-  margin-top: 14px;
+  margin-top: 6px;
   margin-bottom: 6px;
   position: relative;
   display: flex;
@@ -636,6 +648,7 @@ img {
   }
   .element {
     display: none;
+    pointer-events: none;
     .show-elements & {
       display: block;
       position: absolute;
@@ -1295,6 +1308,15 @@ g {
   top: 141px;
 }
 
+.collapse {
+  cursor: pointer;
+  font-size: 14px;
+  color: $lightgray;
+  &:hover {
+    color: $orange;
+  }
+}
+
 .store-row {
   width: 100%;
   display: flex;
@@ -1303,6 +1325,11 @@ g {
   // Bit of a hack to make things line up
   &.items:last-child .store-cell {
     padding-bottom: 14px;
+  }
+
+  i.collapse {
+    outline: none;
+    padding: 8px 7px 8px 10px;
   }
 }
 
@@ -1322,6 +1349,9 @@ g {
     flex: 1;
   }
 }
+.store-text {
+  padding-top: 5px;
+}
 
 .store-header {
   position: fixed;
@@ -1329,6 +1359,15 @@ g {
   z-index: 10;
 }
 
+.store-header {
+  margin-left: 28px;
+}
+
+.reputation {
+  & .store-cell:first-child {
+    margin-left: 28px;
+  }
+}
 
 /* Loadout editor */
 
@@ -1352,7 +1391,7 @@ g {
   padding: 1em;
 }
 
-#loadout-contents {
+.loadout-contents {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -1367,6 +1406,18 @@ g {
     background-image: url('../images/spartan.png');
     background-color: rgba(255, 0, 0, 0.6);
     background-size: 16px 16px;
+  }
+  .warn:before {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    display: inline-block;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    content: '\f071';
+    background-color: rgba(255, 204, 204, 0.6);
+    background-size: 14px 14px;
   }
 }
 
@@ -1999,36 +2050,52 @@ button.toast-close-button {
 /* Clear new items */
 
 .clear-new-items {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  display: none;
+  .show-new-items & {
+    display: block;
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
 
-  button {
-    color: white;
-    padding: 1rem 1.5rem;
-    background-color: rgba(128, 128, 128, 1.0);
-    border-radius: 4px;
-    border: none;
-    text-align: center;
-    font-size: 1.5em;
-    transition: .3s background-color;
-    box-shadow: 1px 1px 10px rgba(0, 0, 0, .5);
-    &:hover, &:active {
-      background-color: rgba(232, 165, 52, 1.0);
+    button {
+      color: white;
+      padding: 1rem 1.5rem;
+      background-color: rgba(128, 128, 128, 1.0);
+      border-radius: 4px;
+      border: none;
+      text-align: center;
+      font-size: 1.5em;
+      transition: .3s background-color;
+      box-shadow: 1px 1px 10px rgba(0, 0, 0, .5);
+      &:hover, &:active {
+        background-color: rgba(232, 165, 52, 1.0);
+      }
+    }
+
+    &.ng-animate {
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+
+    &.ng-enter, &.ng-leave.ng-leave-active {
+      opacity: 0;
+      transform: translateY(5rem);
+    }
+
+    &.ng-leave, &.ng-enter.ng-enter-active {
+      opacity: 1;
+      transform: translateY(0rem);
     }
   }
+}
 
-  &.ng-animate {
-    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-  }
-
-  &.ng-enter, &.ng-leave.ng-leave-active {
-    opacity: 0;
-    transform: translateY(5rem);
-  }
-
-  &.ng-leave, &.ng-enter.ng-enter-active {
-    opacity: 1;
-    transform: translateY(0rem);
+.loadout {
+  &.random {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: .5rem;
+    color: #222;
+    text-decoration: none;
+    font-weight: normal;
   }
 }

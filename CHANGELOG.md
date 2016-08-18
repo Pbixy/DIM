@@ -1,6 +1,23 @@
 # Next
 
-* Show current vendor items being sold
+# 3.9.2
+
+* [#812](https://github.com/DestinyItemManager/DIM/issues/812) Removed rare masks from the items table used by the random item loadout.
+
+# 3.9.1
+
+* [#801](https://github.com/DestinyItemManager/DIM/issues/801) Resolved error with vendor page character sorting.
+* [#792](https://github.com/DestinyItemManager/DIM/pull/792) Warning if user clicks on perks to notify them that they can only be changed in game.
+* [#795](https://github.com/DestinyItemManager/DIM/pull/795) Updated strange coin icon for Xur.
+
+# 3.9.0
+
+* New glimmer-based filters, is:glimmeritem, is:glimmerboost, is:glimmersupply
+* Add option for new item and its popup to be hidden
+* Add ability to exclude items from loadout builder.
+* Expand/collapse sections in DIM.
+* Double clicking an item will equip it on the current character. 2x click on equipped, dequips.
+* Show current vendor items being sold.
 * Move popup won't pop up under the header anymore.
 * If you have an open loadout, and you click "Create loadout", it switches to the new loadout now instead of leaving the previous loadout open.
 * DIM is once again faster.
@@ -10,6 +27,16 @@
 * New button to clear all new items. Keyboard shortcut is "x".
 * Help dialog for keyboard shortcuts. Triggered with "?".
 * When you have two characters of the same class, applying a loadout with a subclass will work all the time now.
+* Item class requirements are part of the header ("Hunter Helmet") instead of in the stats area.
+* You can search for the opposite of "is:" filters with "not:" filters. For example, "is:helmet not:hunter quality:>90".
+* Clicking away from the Xur dialog will close any open item popups.
+* Fixed an issue where you could not equip a loadout that included an exotic item when you already had an exotic equipped that was not going to be replaced by the loadout.
+* Better handling of items with "The Life Exotic" perk.
+* New aliases for rarity filters (is:white, is:green, is:blue, is:purple, is:yellow).
+* An alternate option for the "Gather Engrams" loadout can exclude gathering exotic engrams.
+* Removed popup notification for new items.
+* #798 Keyword searches will now scan perk descriptions.
+* #799 Randomize equipped items for current character. Don't look at us if you have to play a match using Thorn.
 
 # 3.8.3
 
