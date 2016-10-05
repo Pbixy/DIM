@@ -23,6 +23,7 @@
         'Ghost',
         'Consumable',
         'Material',
+        'Ornaments',
         'Emblem',
         'Shader',
         'Emote',
@@ -33,6 +34,8 @@
       Progress: [
         'Bounties',
         'Quests',
+        'RecordBook',
+        'RecordBookLegacy',
         'Missions'
       ],
       Postmaster: [
@@ -42,9 +45,9 @@
       ]
     });
 
-  BucketService.$inject = ['dimItemBucketDefinitions', 'dimCategory'];
+  BucketService.$inject = ['dimDefinitions', 'dimCategory'];
 
-  function BucketService(dimItemBucketDefinitions, dimCategory) {
+  function BucketService(dimDefinitions, dimCategory) {
     // A mapping from the bucket names to DIM item types
     // Some buckets like vault and currencies have been ommitted
     var bucketToType = {
@@ -59,11 +62,14 @@
       BUCKET_CONSUMABLES: "Consumable",
       BUCKET_PRIMARY_WEAPON: "Primary",
       BUCKET_CLASS_ITEMS: "ClassItem",
+      BUCKET_BOOK_LARGE: "RecordBook",
+      BUCKET_BOOK_SMALL: "RecordBookLegacy",
       BUCKET_QUESTS: "Quests",
       BUCKET_VEHICLE: "Vehicle",
       BUCKET_BOUNTIES: "Bounties",
       BUCKET_SPECIAL_WEAPON: "Special",
       BUCKET_SHADER: "Shader",
+      BUCKET_MODS: "Ornaments",
       BUCKET_EMOTES: "Emote",
       BUCKET_MAIL: "Messages",
       BUCKET_BUILD: "Class",
@@ -88,7 +94,7 @@
       });
     });
 
-    return dimItemBucketDefinitions.then(function(bucketDefs) {
+    return dimDefinitions.then(function(defs) {
       var buckets = {
         byHash: {}, // numeric hash -> bucket
         byId: {}, // BUCKET_LEGS -> bucket
@@ -110,7 +116,7 @@
           this.byType[this.unknown.type] = this.unknown;
         }
       };
-      _.each(bucketDefs, function(def) {
+      _.each(defs.InventoryBucket, function(def) {
         if (def.enabled) {
           var bucket = {
             id: def.bucketIdentifier,
@@ -139,9 +145,9 @@
       });
 
       _.each(dimCategory, function(types, category) {
-        buckets.byCategory[category] = types.map(function(type) {
+        buckets.byCategory[category] = _.compact(types.map(function(type) {
           return buckets.byType[type];
-        });
+        }));
       });
 
       return buckets;

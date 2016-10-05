@@ -1,4 +1,99 @@
-# Next
+# 3.11.1
+
+* Fixed an issue with farming mode where users without motes, 3oC, coins, or heavy could not use farming mode.
+* Fixed an issue where classified items would not show up in the UI.
+
+# 3.11.0
+
+##### New
+* Added Quick Move items to farming mode.
+* Farming mode now also moves glimmer items to vault.
+* Added `is:inloadout` filter
+* New filters: is:light, is:hasLight, is:weapon, is:armor, is:cosmetic, is:equipment, is:equippable, is:postmaster, is:inpostmaster, is:equipped, is:transferable, is:movable.
+* New filters for items based on where they come from: is:year3, is:fwc, is:do, is:nm, is:speaker, is:variks, is:shipwright, is:vanguard, is:osiris, is:xur, is:shaxx, is:cq, is:eris, is:vanilla, is:trials, is:ib, is:qw, is:cd, is:srl, is:vog, is:ce, is:ttk, is:kf, is:roi, is:wotm, is:poe, is:coe, is:af.
+* Added debug mode (ctrl+alt+shift+d) to view an item in the move-popup dialog.
+* Added max light value to max light button in dropdown.
+* Major loadout builder performance enhancements.
+* Support rare (blue) items in loadout builder.
+
+##### Tweaks
+* Consumables and materials are now sorted by category.
+* All other items in the General Bucket are sorted by Rarity.
+* Move ornaments inbetween materials and emblems.
+* Link to wiki for stat quality in the move-popup box.
+* Full item details are shown in the move popup by default (they can still be turned off in settings).
+
+##### Bugfixes
+* Prevent double click to move item if loadout dialog is open.
+* [#889](https://github.com/DestinyItemManager/DIM/issues/889) Fixed stats for Iron Banner and Trials of Osiris items.
+* Fix infusion finder preview item not changing as you choose different fuel items. Also filter out year 1 items.
+* Fix some green boots that would show up with a gold border.
+* A bunch of consumables that can't be moved by the API (Treasure Keys, Splicer Keys, Wormsinger Runes, etc) now show up as non-transferable in DIM.
+* Husk of the Pit will no longer be equipped by the Item Leveling loadout.
+* Fixed equipping loadouts onto the current character from Loadout Builder.
+* The default shader no longer counts as a duplicate item.
+* DIM no longer tries to equip exotic faction class items where your character isn't aligned with the right faction.
+* Fixed more cases where your loadouts wouldn't be applied because you already had an exotic equipped.
+* Elemental Icons moved to bottom left to not cover the expansion symbol.
+* Loadout builder no longer shows duplicate sets.
+* Fix equip loadout builder equip to current character.
+
+# 3.10.6
+
+* The DestinyTracker link in the item popup header now includes your perk rolls and selected perk. Share your roll easily!
+* Fixed moving consumables in loadouts. Before, you would frequently get errors applying a loadout that included consumables. We also have a friendlier, more informative error message when you don't have enough of a consumable to fulfill your loadout.
+* Fixed a bug where when moving stacks of items, the stack would disappear.
+* The progress bar around the reputation diamonds is now more accurate.
+* Enabled item quality.
+* Item Quality is enabled by default for new installs.
+* A new Record Books row in Progress has your Rise of Iron record book.
+* Searches now work for all characters and the vault again.
+* Can equip loadouts onto the current character from Loadout Builder.
+* Added ability to feature toggle items between Beta + Release.
+
+# 3.10.5
+
+* Added Ornaments.
+
+# 3.10.4
+
+* We handle manifest download/cache errors better, by deleting the cached file and letting you retry.
+* Date armor ratings end is on 9/20/2016 @ 2AM Pacific.
+* Fixed issues with broken images by downloading from Bungie.net with https.
+* Loadouts for multi-platform users will now save selected and equipped items for both platforms.  Previously, when switching platforms, loadouts would remove items from the loadout for the opposite platform.
+
+# 3.10.3
+
+* Fixed a "move-canceled" message showing up sometimes when applying loadouts.
+* Bugged items like Iron Shell no longer attempt to compute quality. They'll fix themselves when Bungie fixes them.
+* Fixed "Aim assist" stat not showing up in CSV (and no stats showing up if your language wasn't English).
+* We now catch manifest updates that don't update the manifest version - if you see broken images, try reloading DIM and it should pick up new info.
+* Worked around a bug in the manifest data where Ornamenent nodes show up twice.
+* DIM won't allow you to move rare Masks, because that'll destroy them.
+* The "Random" auto loadout can now be un-done from the loadout menu.
+* For non-variable items (emblems, shaders, ships, etc) in a loadout, DIM will use whichever copy is already on a character if it can, rather than moving a specific instance from another character.
+
+# 3.10.2
+
+* Fixed error building talent grid for Hawkmoon.
+* Don't attempt to build record books when advisors are not loaded.
+* Dragged items now include their border and light level again.
+* New-item overlays have been restored (enable in settings).
+* Reenable record book progress.
+* Better handle errors when record book info isn't available.
+* Show an error message if the manifest doesn't load.
+* Fix an error when equipping loadouts.
+* DIM usage tips will only show up once per session now. You can bring back previously hidden tips with a button in the settings page.
+
+# 3.10.0
+
+* Add ability to create loadouts by selecting sets of perks.
+* [#823](https://github.com/DestinyItemManager/DIM/issues/823) Added 'current' property to stores.
+* The DIM extension is now much smaller.
+* DIM can now display item information in all supported Destiny languages. Choose your language in the settings then reload DIM.
+* We now automatically pick up Destiny data updates, so DIM should work after patches without needing an update.
+* The Reputation section should match the in-game logos better now.
+* Disable new item overlays due to a bug.
 
 # 3.9.2
 

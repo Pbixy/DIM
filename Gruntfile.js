@@ -16,7 +16,11 @@ module.exports = function(grunt) {
         files: [{
           cwd: 'app/',
           src: [
-            '**'
+            '**',
+            '!vendor/angular/angular.js',
+            '!vendor/sql.js/c/**/*',
+            '!vendor/sql.js/js/sql-memory-growth.js',
+            '!vendor/sql.js/js/sql-debug.js'
           ],
           dest: 'dist/chrome'
         }]
@@ -25,7 +29,11 @@ module.exports = function(grunt) {
         files: [{
           cwd: 'app/',
           src: [
-            '**'
+            '**',
+            '!vendor/angular/angular.js',
+            '!vendor/sql.js/c/**/*',
+            '!vendor/sql.js/js/sql-memory-growth.js',
+            '!vendor/sql.js/js/sql-debug.js'
           ],
           dest: 'dist/firefox'
         }]
@@ -83,17 +91,26 @@ module.exports = function(grunt) {
     replace: {
       // Replace all instances of $DIM_VERSION with the version number from package.json
       main_version: {
-        src: ['dist/**/*.{json,html,js}'],
+        src: [
+          'dist/**/*.{json,html,js}',
+          '!dist/**/vendor/**/*'
+        ],
         overwrite: true,
         replacements: [{
           from: '$DIM_VERSION',
           to: pkg.version.toString()
+        }, {
+          from: '$DIM_FLAVOR',
+          to: 'release'
         }]
       },
       // Replace all instances of $DIM_VERSION or the current version number (from package.json)
       // with a beta version based on the current time.
       beta_version: {
-        src: ['dist/**/*.{json,html,js}'],
+        src: [
+          'dist/**/*.{json,html,js}',
+          '!dist/**/vendor/**/*'
+        ],
         overwrite: true,
         replacements: [{
           from: pkg.version.toString(),
@@ -101,6 +118,9 @@ module.exports = function(grunt) {
         }, {
           from: '$DIM_VERSION',
           to: betaVersion
+        }, {
+          from: '$DIM_FLAVOR',
+          to: 'beta'
         }]
       }
     },

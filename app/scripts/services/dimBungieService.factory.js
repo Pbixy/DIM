@@ -26,7 +26,8 @@
       equip: equip,
       equipItems: equipItems,
       setItemState: setItemState,
-      getXur: getXur
+      getXur: getXur,
+      getManifest: getManifest
     };
 
     return service;
@@ -58,7 +59,11 @@
                  response.config.url.indexOf('/Character/') < 0) {
         return $q.reject(new Error('No Destiny account was found for this platform.'));
       } else if (errorCode > 1) {
-        return $q.reject(new Error(response.data.Message));
+        if (typeof response.data.Message === "undefined") {
+          return $q.reject(new Error('The Bungie API is currently experiencing difficulties.'));
+        } else {
+          return $q.reject(new Error(response.data.Message));
+        }
       }
 
       return response;
@@ -107,6 +112,28 @@
         active: true
       });
     }
+
+
+    /************************************************************************************************************************************/
+
+    function getManifest() {
+      return $q.when({
+        method: 'GET',
+        url: 'https://www.bungie.net/Platform/Destiny/Manifest/',
+        headers: {
+          'X-API-Key': apiKey
+        }
+      })
+      .then(function(request) {
+        return $http(request);
+      })
+      .then(handleErrors)
+      .then(function(response) {
+        return response.data.Response;
+      });
+    }
+
+
     /************************************************************************************************************************************/
 
     function getBnetCookies() {
@@ -163,7 +190,15 @@
             message = 'You may not be connected to the internet.';
           }
 
-          toaster.pop('error', 'Bungie.net Error', message, 0);
+          var twitter = '<div>Get status updates on <a target="_blank" href="http://twitter.com/ThisIsDIM">Twitter</a> <a target="_blank" href="http://twitter.com/ThisIsDIM"><i class="fa fa-twitter fa-2x" style="vertical-align: middle;"></i></a></div>';
+
+          toaster.pop({
+            type: 'error',
+            bodyOutputType: 'trustedHtml',
+            title: 'Bungie.net Error',
+            body: message + twitter,
+            showCloseButton: false
+          });
 
           return $q.reject(e);
         });
@@ -225,6 +260,7 @@
         return $q.reject(new Error('Failed to find a Destiny account for you on ' + platform.label + '.'));
       }
     }
+
 
     /************************************************************************************************************************************/
 
@@ -299,7 +335,7 @@
 
     /************************************************************************************************************************************/
 
-    function getStores(platform, includeVendors) {
+    function getStores(platform, includeVendors, vendorDefs) {
       var data = {
         token: null,
         membershipId: null
@@ -320,18 +356,34 @@
         .then(function() {
           var promises = [
             getDestinyInventories(data.token, platform, data.membershipId, data.characters),
-            getDestinyProgression(data.token, platform, data.membershipId, data.characters),
+            getDestinyProgression(data.token, platform, data.membershipId, data.characters)
+              // Don't let failure of progression fail other requests.
+              .catch((e) => console.error("Failed to load character progression", e)),
             getDestinyAdvisors(data.token, platform, data.membershipId, data.characters)
+              // Don't let failure of advisors fail other requests.
+              .catch((e) => console.error("Failed to load advisors", e))
           ];
           if (includeVendors) {
-            promises.push(getDestinyVendors(data.token, platform, data.membershipId, data.characters));
+            promises.push(getDestinyVendors(vendorDefs, data.token, platform, data.membershipId, data.characters).catch(() => {
+              console.warn("Vendors are not able to be downloaded atm.");
+            }));
           }
           return $q.all(promises).then(function(data) {
             return $q.resolve(data[0]);
           });
         })
         .catch(function(e) {
-          toaster.pop('error', 'Bungie.net Error', e.message);
+          var twitter = '<div>Get status updates on <a target="_blank" href="http://twitter.com/ThisIsDIM">Twitter</a> <a target="_blank" href="http://twitter.com/ThisIsDIM"><i class="fa fa-twitter fa-2x" style="vertical-align: middle;"></i></a></div>';
+
+          toaster.pop({
+            type: 'error',
+            bodyOutputType: 'trustedHtml',
+            title: 'Bungie.net Error',
+            body: e.message + twitter,
+            showCloseButton: false
+          });
+
+          // toaster.pop('error', 'Bungie.net Error', e.message);
 
           return $q.reject(e);
         });
@@ -492,11 +544,9 @@
       return character;
     }
 
-    function getDestinyVendors(token, platform, membershipId, characters) {
-      // Titan van, Hunter van, Warlock van, Van quart, Dead orb, Future war, New mon, Eris Morn, Cruc hand, Cruc quart, Speaker, Variks, Exotic Blue, Banner
-      var vendorHashes = ['1990950', '3003633346', '1575820975', '2668878854', '3611686524', '1821699360', '1808244981', '174528503', '3746647075', '3658200622', '2680694281', '1998812735', '3902439767', '242140165'];
+    function getDestinyVendors(vendorDefs, token, platform, membershipId, characters) {
       var promises = [];
-      _.each(vendorHashes, function(vendorHash) {
+      _.each(vendorDefs, function(vendorDef, vendorHash) {
         _.each(characters, function(character) {
           var processPB = processVendorsResponse.bind(null, character);
           promises.push(
@@ -512,7 +562,6 @@
           );
         });
       });
-
       return $q.all(promises);
     }
 
@@ -675,7 +724,7 @@
         .then(handleErrors)
         .then(function(response) {
           var data = response.data.Response;
-          store.updateCharacterInfo(data.summary);
+          store.updateCharacterInfoFromEquip(data.summary);
           return _.select(items, function(i) {
             var item = _.find(data.equipResults, { itemInstanceId: i.id });
             return item && item.equipStatus === 1;

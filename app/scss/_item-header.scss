@@ -15,7 +15,10 @@ $item-header-spacing: 5px;
   padding: $item-header-spacing 28px $item-header-spacing $item-header-spacing;
   position: relative;
   text-overflow: ellipsis;
-  white-space: nowrap !important;
+
+  .fa {
+    cursor: pointer;
+  }
 
   &.is-arc {
     background-color: $arc;
@@ -27,10 +30,8 @@ $item-header-spacing: 5px;
     background-color: $void;
   }
 
-  a {
-    color: #000;
-  }
   .item-title {
+    color: #000;
     font-size: 1rem;
   }
   .icon {

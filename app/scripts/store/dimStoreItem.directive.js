@@ -3,36 +3,31 @@
 
   angular.module('dimApp')
     .directive('dimStoreItem', StoreItem)
-    // A filter that will heatmap-color a background according to a percentage
-    .filter('qualityColor', function() {
-      return function getColor(value, property) {
-        property = property || 'background-color';
-        var color = 0;
-        if (value <= 85) {
-          color = 0;
-        } else if (value <= 90) {
-          color = 20;
-        } else if (value <= 95) {
-          color = 60;
-        } else if (value <= 99) {
-          color = 120;
-        } else if (value >= 100) {
-          color = 190;
-        } else {
-          return 'white';
-        }
-        var result = {};
-        result[property] = 'hsl(' + color + ',85%,60%)';
-        return result;
-      };
-    });
+    .filter('tagIcon', ['dimSettingsService', function(dimSettingsService) {
+      var iconType = {};
 
+      dimSettingsService.itemTags.forEach((tag) => {
+        if (tag.type) {
+          iconType[tag.type] = tag.icon;
+        }
+      });
+
+      return function tagIcon(value) {
+        var icon = iconType[value];
+        if (icon) {
+          return "item-tag fa fa-" + icon;
+        } else {
+          return "item-tag no-tag";
+        }
+      };
+    }]);
 
 
   StoreItem.$inject = ['dimItemService', 'dimStoreService', 'ngDialog', 'dimLoadoutService', '$rootScope', 'dimActionQueue'];
 
   function StoreItem(dimItemService, dimStoreService, ngDialog, dimLoadoutService, $rootScope, dimActionQueue) {
     var otherDialog = null;
+    let firstItemTimed = false;
 
     return {
       bindToController: true,
@@ -60,9 +55,10 @@
         '    <div class="item-xp-bar item-xp-bar-small" ng-if="vm.item.percentComplete && !vm.item.complete">',
         '      <div dim-percent-width="vm.item.percentComplete"></div>',
         '    </div>',
-        '    <div class="img" dim-bungie-image-fallback="::vm.item.icon" ng-click="vm.clicked(vm.item, $event)" ng-dblclick="vm.doubleClicked(vm.item, $event)">',
+        '    <div class="img" ng-style="::vm.item.icon | bungieBackground" ng-click="vm.clicked(vm.item, $event)" ng-dblclick="vm.doubleClicked(vm.item, $event)">',
         '    <div ng-if="vm.item.quality" class="item-stat item-quality" ng-style="vm.item.quality.min | qualityColor">{{ vm.item.quality.min }}%</div>',
         '    <img class="element" ng-if=":: vm.item.dmg && vm.item.dmg !== \'kinetic\'" ng-src="/images/{{::vm.item.dmg}}.png"/>',
+        '    <span ng-class="vm.item.dimInfo.tag | tagIcon"></span>',
         '    <div ng-if="vm.item.isNew" class="new_overlay_overflow">',
         '      <img class="new_overlay" src="/images/overlay.svg" height="44" width="44"/>',
         '    </div>',
@@ -73,6 +69,11 @@
     };
 
     function Link(scope, element) {
+      if (!firstItemTimed) {
+        console.timeEnd('First item directive built');
+        firstItemTimed = true;
+      }
+
       var vm = scope.vm;
       var dialogResult = null;
 
@@ -99,10 +100,15 @@
       }
 
       vm.doubleClicked = dimActionQueue.wrap(function(item, e) {
-        e.stopPropagation();
-        var active = dimStoreService.getActiveStore();
+        if (!dimLoadoutService.dialogOpen) {
+          e.stopPropagation();
+          const active = dimStoreService.getActiveStore();
 
-        dimItemService.moveTo(item, active, item.canBeEquippedBy(active) ? !item.equipped : false);
+          // Equip if it's not equipped or it's on another character
+          const equip = !item.equipped || item.owner !== active.id;
+
+          dimItemService.moveTo(item, active, item.canBeEquippedBy(active) ? equip : false, item.amount);
+        }
       });
 
       vm.clicked = function openPopup(item, e) {
@@ -177,7 +183,7 @@
       }
 
       scope.$watch('vm.item.quality', function() {
-        vm.badgeClassNames['item-stat-no-bg'] = (vm.item.quality && vm.item.quality.min > 0);
+        vm.badgeClassNames['item-stat-no-bg'] = vm.item.quality;
       });
     }
   }

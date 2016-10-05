@@ -24,9 +24,6 @@
     padding: 5px;
     display: inline-block;
   }
-  a {
-    color: #000;
-  }
   .move-button {
     background-size: cover;
     width: 37px;
@@ -71,6 +68,15 @@
 
   .interaction {
     margin: 0 6px;
+  }
+  dim-item-tag {
+    position: absolute;
+    right: 5px;
+    select {
+      background: transparent;
+      border: none;
+      outline: none;
+    }
   }
 }
 

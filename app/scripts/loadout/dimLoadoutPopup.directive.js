@@ -19,33 +19,33 @@
         '<div class="loadout-popup-content">',
         '  <ul class="loadout-list">',
         '    <li class="loadout-set">',
-        '      <span ng-click="vm.newLoadout($event)">+ Create Loadout</span>',
-        '      <span ng-click="vm.newLoadoutFromEquipped($event)">From Equipped</span>',
+        '      <span ng-click="vm.newLoadout($event)"><i class="fa fa-plus-circle"></i> {{ \'Create Loadout\' | translate }}</span>',
+        '      <span ng-click="vm.newLoadoutFromEquipped($event)" translate="loadout_from_equipped"></span>',
         '    </li>',
         '    <li ng-repeat="loadout in vm.loadouts track by loadout.id" class="loadout-set">',
         '      <span title="{{ loadout.name }}" ng-click="vm.applyLoadout(loadout, $event)">{{ loadout.name }}</span>',
-        '      <span ng-click="vm.deleteLoadout(loadout, $event)"><i class="fa fa-trash-o"></i></span>',
-        '      <span ng-click="vm.editLoadout(loadout, $event)"><i class="fa fa-pencil"></i></span>',
+        '      <span title="{{ \'Delete Loadout\' | translate }}" ng-click="vm.deleteLoadout(loadout, $event)"><i class="fa fa-trash-o"></i></span>',
+        '      <span title="{{ \'Edit Loadout\' | translate }}" ng-click="vm.editLoadout(loadout, $event)"><i class="fa fa-pencil"></i></span>',
         '    </li>',
         '    <li class="loadout-set" ng-if="vm.search.query">',
-        '      <span ng-click="vm.searchLoadout($event)"><i class="fa fa-search"></i> Search: "{{vm.search.query}}"</span>',
+        '      <span ng-click="vm.searchLoadout($event)"><i class="fa fa-search"></i> {{ \'apply_search_loadout\' | translate:{ query: vm.search.query } }}</span>',
         '    </li>',
         '    <li class="loadout-set" ng-if="!vm.store.isVault">',
-        '      <span ng-click="vm.maxLightLoadout($event)"><i class="fa fa-star"></i> Maximize Light</span>',
+        '      <span ng-click="vm.maxLightLoadout($event)"><i class="fa fa-star"></i> {{ \'Maximize Light\' | translate }} <span class="light" ng-bind="::vm.maxLightValue"></span></span>',
         '    </li>',
         '    <li class="loadout-set" ng-if="!vm.store.isVault">',
-        '      <span ng-click="vm.itemLevelingLoadout($event)"><i class="fa fa-level-up"></i> Item Leveling</span>',
+        '      <span ng-click="vm.itemLevelingLoadout($event)"><i class="fa fa-level-up"></i> {{ \'Item Leveling\' | translate }}</span>',
         '    </li>',
         '    <li class="loadout-set">',
-        '      <span ng-click="vm.gatherEngramsLoadout($event, { exotics: true  } )"><img class="fa" src="/images/engram.svg" height="12" width="12"/> Gather Engrams</span>',
-        '      <span ng-click="vm.gatherEngramsLoadout($event, { exotics: false })"><i class="fa fa-ban"></i> Exotics</span>',
+        '      <span ng-click="vm.gatherEngramsLoadout($event, { exotics: true  } )"><img class="fa" src="/images/engram.svg" height="12" width="12"/> {{ \'Gather Engrams\' | translate }}</span>',
+        '      <span ng-click="vm.gatherEngramsLoadout($event, { exotics: false })"><i class="fa fa-ban"></i> {{ \'gather_engrams_except_exotics\' | translate }}</span>',
         '    </li>',
         '    <li class="loadout-set" ng-if="!vm.store.isVault">',
-        '      <span ng-click="vm.startFarmingEngrams($event)"><img class="fa" src="/images/engram.svg" height="12" width="12"/> Engrams to Vault</span>',
+        '      <span ng-click="vm.startFarming($event)"><img class="fa" src="/images/engram.svg" height="12" width="12"/> {{ \'farming_mode\' | translate }}</span>',
         '    </li>',
         '    <li class="loadout-set" ng-if="vm.previousLoadout">',
         '      <span title="{{ vm.previousLoadout.name }}" ng-click="vm.applyLoadout(vm.previousLoadout, $event, true)"><i class="fa fa-undo"></i> {{vm.previousLoadout.name}}</span>',
-        '      <span ng-click="vm.applyLoadout(vm.previousLoadout, $event)">All items</span>',
+        '      <span ng-click="vm.applyLoadout(vm.previousLoadout, $event)">{{\'restore_all_items\' | translate }}</span>',
         '    </li>',
         '  </ul>',
         '</div>'
@@ -53,9 +53,9 @@
     };
   }
 
-  LoadoutPopupCtrl.$inject = ['$rootScope', 'ngDialog', 'dimLoadoutService', 'dimItemService', 'toaster', 'dimEngramFarmingService', '$window', 'dimSearchService', 'dimPlatformService'];
+  LoadoutPopupCtrl.$inject = ['$rootScope', 'ngDialog', 'dimLoadoutService', 'dimItemService', 'toaster', 'dimFarmingService', '$window', 'dimSearchService', 'dimPlatformService'];
 
-  function LoadoutPopupCtrl($rootScope, ngDialog, dimLoadoutService, dimItemService, toaster, dimEngramFarmingService, $window, dimSearchService, dimPlatformService) {
+  function LoadoutPopupCtrl($rootScope, ngDialog, dimLoadoutService, dimItemService, toaster, dimFarmingService, $window, dimSearchService, dimPlatformService) {
     var vm = this;
     vm.previousLoadout = _.last(dimLoadoutService.previousLoadouts[vm.store.id]);
 
@@ -97,7 +97,7 @@
     vm.newLoadoutFromEquipped = function newLoadout($event) {
       ngDialog.closeAll();
 
-      var loadout = filterLoadoutToEquipped(loadoutFromCurrentlyEquipped(vm.store.items, ""));
+      var loadout = filterLoadoutToEquipped(vm.store.loadoutFromCurrentlyEquipped(""));
       // We don't want to prepopulate the loadout with a bunch of cosmetic junk
       // like emblems and ships and horns.
       loadout.items = _.pick(loadout.items,
@@ -129,25 +129,6 @@
       });
     };
 
-    function loadoutFromCurrentlyEquipped(items, name) {
-      return {
-        classType: -1,
-        name: name,
-        items: _(items)
-          .chain()
-          .select(function(item) {
-            return item.canBeInLoadout();
-          })
-          .map(function(i) {
-            return angular.copy(i);
-          })
-          .groupBy(function(i) {
-            return i.type.toLowerCase();
-          })
-          .value()
-      };
-    }
-
     function filterLoadoutToEquipped(loadout) {
       var filteredLoadout = angular.copy(loadout);
       filteredLoadout.items = _.mapObject(filteredLoadout.items, function(items) {
@@ -158,33 +139,24 @@
 
     vm.applyLoadout = function applyLoadout(loadout, $event, filterToEquipped) {
       ngDialog.closeAll();
-      dimEngramFarmingService.stop();
-
-      if (!dimLoadoutService.previousLoadouts[vm.store.id]) {
-        dimLoadoutService.previousLoadouts[vm.store.id] = [];
-      }
-
-      if (!vm.store.isVault) {
-        if (loadout === vm.previousLoadout) {
-          vm.previousLoadout = dimLoadoutService.previousLoadouts[vm.store.id].pop();
-        } else {
-          vm.previousLoadout = loadoutFromCurrentlyEquipped(vm.store.items, 'Before "' + loadout.name + '"');
-          dimLoadoutService.previousLoadouts[vm.store.id].push(vm.previousLoadout); // ugly hack
-        }
-      }
+      dimFarmingService.stop();
 
       if (filterToEquipped) {
         loadout = filterLoadoutToEquipped(loadout);
       }
 
-      dimLoadoutService.applyLoadout(vm.store, loadout);
+      dimLoadoutService.applyLoadout(vm.store, loadout, true).then(() => {
+        vm.previousLoadout = _.last(dimLoadoutService.previousLoadouts[vm.store.id]);
+      });
     };
 
     // A dynamic loadout set up to level weapons and armor
     vm.itemLevelingLoadout = function itemLevelingLoadout($event) {
       var applicableItems = _.select(dimItemService.getItems(), function(i) {
         return i.canBeEquippedBy(vm.store) &&
-          i.talentGrid && !i.talentGrid.xpComplete; // Still need XP
+          i.talentGrid &&
+          !i.talentGrid.xpComplete && // Still need XP
+          i.hash !== 2168530918; // Husk of the pit has a weirdo one-off xp mechanic
       });
 
       var bestItemFn = function(item) {
@@ -279,8 +251,12 @@
       };
 
       var loadout = optimalLoadout(applicableItems, bestItemFn, 'Maximize Light');
-      vm.applyLoadout(loadout, $event);
+      if ($event) {
+        vm.applyLoadout(loadout, $event);
+      }
+      return loadout;
     };
+    vm.maxLightValue = dimLoadoutService.getLight(vm.store, vm.maxLightLoadout()).toFixed(1);
 
     // A dynamic loadout set up to level weapons and armor
     vm.gatherEngramsLoadout = function gatherEngramsLoadout($event, options = {}) {
@@ -350,9 +326,9 @@
       vm.applyLoadout(loadout, $event);
     };
 
-    vm.startFarmingEngrams = function startFarmingEngrams() {
+    vm.startFarming = function startFarming() {
       ngDialog.closeAll();
-      dimEngramFarmingService.start(vm.store);
+      dimFarmingService.start(vm.store);
     };
 
     // Generate an optimized loadout based on a filtered set of items and a value function
