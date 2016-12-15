@@ -9,7 +9,6 @@
     '$q',
     'dimBungieService',
     'dimPlatformService',
-    'dimSettingsService',
     'dimCategory',
     'dimDefinitions',
     'dimBucketService',
@@ -28,7 +27,6 @@
     $q,
     dimBungieService,
     dimPlatformService,
-    dimSettingsService,
     dimCategory,
     dimDefinitions,
     dimBucketService,
@@ -85,14 +83,19 @@
     // Prototype for Store objects - add methods to this to add them to all
     // stores.
     var StoreProto = {
-      // Get the total amount of this item in the store, across all stacks,
-      // excluding stuff in the postmaster.
+      /**
+       * Get the total amount of this item in the store, across all stacks,
+       * excluding stuff in the postmaster.
+       */
       amountOfItem: function(item) {
         return sum(_.filter(this.items, function(i) {
           return i.hash === item.hash && !i.location.inPostmaster;
         }), 'amount');
       },
-      // How much of items like this item can fit in this store?
+      /**
+       * How much of items like this item can fit in this store? For
+       * stackables, this is in stacks, not individual pieces.
+       */
       capacityForItem: function(item) {
         if (!item.bucket) {
           console.error("item needs a 'bucket' field", item);
@@ -100,12 +103,25 @@
         }
         return item.bucket.capacity;
       },
-      // How many *more* items like this item can fit in this store?
+      /**
+       * How many *more* items like this item can fit in this store?
+       * This takes into account stackables, so the answer will be in
+       * terms of individual pieces.
+       */
       spaceLeftForItem: function(item) {
         if (!item.type) {
           throw new Error("item needs a 'type' field");
         }
-        return Math.max(0, this.capacityForItem(item) - this.buckets[item.location.id].length);
+        const openStacks = Math.max(0, this.capacityForItem(item) -
+                                    this.buckets[item.location.id].length);
+        const maxStackSize = item.maxStackSize || 1;
+        if (maxStackSize === 1) {
+          return openStacks;
+        } else {
+          const existingAmount = this.amountOfItem(item);
+          const stackSpace = existingAmount > 0 ? (maxStackSize - (existingAmount % maxStackSize)) : 0;
+          return (openStacks * maxStackSize) + stackSpace;
+        }
       },
       updateCharacterInfoFromEquip: function(characterInfo) {
         dimDefinitions.then((defs) => this.updateCharacterInfo(defs, characterInfo));
@@ -116,7 +132,7 @@
         this.powerLevel = characterInfo.characterBase.powerLevel;
         this.background = 'https://www.bungie.net/' + characterInfo.backgroundPath;
         this.icon = 'https://www.bungie.net/' + characterInfo.emblemPath;
-        this.stats = getStatsData(defs.Stat, characterInfo.characterBase);
+        this.stats = getCharacterStatsData(defs.Stat, characterInfo.characterBase);
       },
       // Remove an item from this store. Returns whether it actually removed anything.
       removeItem: function(item) {
@@ -141,9 +157,9 @@
         if (item.location.id === 'BUCKET_RECOVERY' && bucketItems.length >= item.location.capacity) {
           dimInfoService.show('lostitems', {
             type: 'warning',
-            title: 'Postmaster Limit',
-            body: 'There are 20 lost items at the Postmaster on your ' + this.name + '. Any new items will overwrite the existing.',
-            hide: 'Never show me this type of warning again.'
+            title: $translate.instant('Postmaster.Limit'),
+            body: $translate.instant('Postmaster.Desc', { store: this.name }),
+            hide: $translate.instant('Help.NeverShow')
           });
         }
         item.owner = this.id;
@@ -289,10 +305,6 @@
       return _stores;
     }
 
-    function loadStores(activePlatform) {
-      return dimBungieService.getStores(activePlatform);
-    }
-
     // Returns a promise for a fresh view of the stores and their items.
     // If this is called while a reload is already happening, it'll return the promise
     // for the ongoing reload rather than kicking off a new reload.
@@ -322,9 +334,8 @@
                               dimBucketService,
                               loadNewItems(activePlatform),
                               dimItemInfoService(activePlatform),
-                              $translate(['Vault']),
-                              loadStores(activePlatform)])
-        .then(function([defs, buckets, newItems, itemInfoService, translations, rawStores]) {
+                              dimBungieService.getStores(activePlatform)])
+        .then(function([defs, buckets, newItems, itemInfoService, rawStores]) {
           console.timeEnd('Load stores (Bungie API)');
           if (activePlatform !== dimPlatformService.getActive()) {
             throw new Error("Active platform mismatch");
@@ -362,10 +373,10 @@
             if (raw.id === 'vault') {
               store = angular.extend(Object.create(StoreProto), {
                 id: 'vault',
-                name: translations.Vault,
+                name: $translate.instant('Bucket.Vault'),
                 class: 'vault',
                 current: false,
-                className: translations.Vault,
+                className: $translate.instant('Bucket.Vault'),
                 lastPlayed: '2005-01-01T12:00:01Z',
                 icon: '/images/vault.png',
                 background: '/images/vault-background.png',
@@ -386,16 +397,23 @@
                   return buckets[sort].capacity;
                 },
                 spaceLeftForItem: function(item) {
-                  var sort = item.sort;
+                  let sort = item.sort;
                   if (item.bucket) {
                     sort = item.bucket.sort;
                   }
                   if (!sort) {
                     throw new Error("item needs a 'sort' field");
                   }
-                  return Math.max(0, this.capacityForItem(item) - count(this.items, function(i) {
-                    return i.bucket.sort === sort;
-                  }));
+                  const openStacks = Math.max(0, this.capacityForItem(item) -
+                                              count(this.items, (i) => i.bucket.sort === sort));
+                  const maxStackSize = item.maxStackSize || 1;
+                  if (maxStackSize === 1) {
+                    return openStacks;
+                  } else {
+                    const existingAmount = this.amountOfItem(item);
+                    const stackSpace = existingAmount > 0 ? (maxStackSize - (existingAmount % maxStackSize)) : 0;
+                    return (openStacks * maxStackSize) + stackSpace;
+                  }
                 },
                 removeItem: function(item) {
                   var result = StoreProto.removeItem.call(this, item);
@@ -428,10 +446,13 @@
 
               const race = defs.Race[character.characterBase.raceHash];
               let genderRace = "";
+              let className = "";
               if (character.characterBase.genderType === 0) {
                 genderRace = race.raceNameMale;
+                className = defs.Class[character.characterBase.classHash].classNameMale;
               } else {
                 genderRace = race.raceNameFemale;
+                className = defs.Class[character.characterBase.classHash].classNameFemale;
               }
 
               store = angular.extend(Object.create(StoreProto), {
@@ -442,9 +463,10 @@
                 background: 'https://bungie.net/' + character.backgroundPath,
                 level: character.characterLevel,
                 powerLevel: character.characterBase.powerLevel,
-                stats: getStatsData(defs.Stat, character.characterBase),
+                stats: getCharacterStatsData(defs.Stat, character.characterBase),
                 class: getClass(character.characterBase.classType),
-                className: defs.Class[character.characterBase.classHash].className,
+                classType: character.characterBase.classType,
+                className: className,
                 genderRace: genderRace,
                 percentToNextLevel: character.percentToNextLevel / 100.0,
                 progression: raw.character.progression,
@@ -718,7 +740,7 @@
         visible: true,
         sourceHashes: itemDef.sourceHashes,
         lockable: normalBucket.type !== 'Class' && ((currentBucket.inPostmaster && item.isEquipment) || currentBucket.inWeapons || item.lockable),
-        trackable: currentBucket.inProgress && currentBucket.hash !== 375726501,
+        trackable: currentBucket.inProgress && (currentBucket.hash === 2197472680 || currentBucket.hash === 1801258597),
         tracked: item.state === 2,
         locked: item.locked,
         redacted: itemDef.redacted,
@@ -740,7 +762,7 @@
       // An item is new if it was previously known to be new, or if it's new since the last load (previousItems);
       createdItem.isNew = false;
       try {
-        createdItem.isNew = dimSettingsService.showNewItems && isItemNew(createdItem.id, previousItems, newItems);
+        createdItem.isNew = isItemNew(createdItem.id, previousItems, newItems);
       } catch (e) {
         console.error("Error determining new-ness of " + createdItem.name, item, itemDef, e);
       }
@@ -822,6 +844,14 @@
       // In debug mode, keep the original JSON around
       if (dimFeatureFlags.debugMode) {
         createdItem.originalItem = item;
+      }
+
+      // do specific things for specific items
+      if (createdItem.hash === 491180618) { // Trials Cards
+        createdItem.objectives = buildTrials(owner.advisors.activities.trials);
+        var best = owner.advisors.activities.trials.extended.highestWinRank;
+        createdItem.complete = owner.advisors.activities.trials.completion.success;
+        createdItem.percentComplete = createdItem.complete ? 1 : (best >= 7 ? .66 : (best >= 5 ? .33 : 0));
       }
 
       return createdItem;
@@ -996,6 +1026,29 @@
       };
     }
 
+    function buildTrials(trials) {
+      var flawless = trials.completion.success;
+      trials = trials.extended;
+      function buildObjective(name, current, max, bool, style) {
+        return {
+          displayStyle: style,
+          displayName: $translate.instant('TrialsCard.' + name),
+          progress: current,
+          completionValue: max,
+          complete: bool ? current >= max : false,
+          boolean: bool
+        };
+      }
+
+      return [
+        buildObjective('Wins', trials.scoreCard.wins, trials.scoreCard.maxWins, false, 'trials'),
+        buildObjective('Losses', trials.scoreCard.losses, trials.scoreCard.maxLosses, false, 'trials'),
+        buildObjective('FiveWins', trials.highestWinRank, trials.winRewardDetails[0].winCount, true),
+        buildObjective('SevenWins', trials.highestWinRank, trials.winRewardDetails[1].winCount, true),
+        buildObjective('Flawless', flawless, 1, true),
+      ];
+    }
+
     function buildRecords(recordBook, objectiveDef) {
       if (!recordBook.records || !recordBook.records.length) {
         return undefined;
@@ -1004,10 +1057,16 @@
       let processRecord = (recordBook, record) => {
         var def = objectiveDef[record.objectives[0].objectiveHash];
 
+        var display;
+        if (record.recordValueUIStyle === '_investment_record_value_ui_style_time_in_milliseconds') {
+          display = record.objectives[0].displayValue;
+        }
+
         return {
           description: record.description,
           displayName: record.displayName,
           progress: record.objectives[0].progress,
+          display: display,
           completionValue: def.completionValue,
           complete: record.objectives[0].isComplete,
           boolean: def.completionValue === 1
@@ -1399,7 +1458,7 @@
         itemInfoService])
         .then(function(args) {
           var result = [];
-          dimManifestService.statusText = 'Loading Destiny characters and inventory...';
+          dimManifestService.statusText = $translate.instant('Manifest.LoadCharInv') + '...';
           _.each(items, function(item) {
             var createdItem = null;
             try {
@@ -1481,21 +1540,27 @@
       }
     }
 
-    function getStatsData(statDefs, data) {
-      var statsWithTiers = ['STAT_INTELLECT', 'STAT_DISCIPLINE', 'STAT_STRENGTH'];
+    /**
+     * Compute character-level stats (int, dis, str).
+     */
+    function getCharacterStatsData(statDefs, data) {
+      const statsWithTiers = new Set(['STAT_INTELLECT', 'STAT_DISCIPLINE', 'STAT_STRENGTH']);
       var stats = ['STAT_INTELLECT', 'STAT_DISCIPLINE', 'STAT_STRENGTH', 'STAT_ARMOR', 'STAT_RECOVERY', 'STAT_AGILITY'];
       var ret = {};
-      for (var s = 0; s < stats.length; s++) {
+      stats.forEach((statId) => {
         var statHash = {};
-        switch (stats[s]) {
+        statHash.id = statId;
+        switch (statId) {
         case 'STAT_INTELLECT': statHash.name = 'Intellect'; statHash.effect = 'Super'; break;
         case 'STAT_DISCIPLINE': statHash.name = 'Discipline'; statHash.effect = 'Grenade'; break;
         case 'STAT_STRENGTH': statHash.name = 'Strength'; statHash.effect = 'Melee'; break;
         }
 
-        const stat = data.stats[stats[s]];
+        statHash.icon = statHash.name ? `images/${statHash.name.toLowerCase()}.png` : undefined;
+
+        const stat = data.stats[statId];
         if (!stat) {
-          continue;
+          return;
         }
         statHash.value = stat.value;
         const statDef = statDefs[stat.statHash];
@@ -1503,7 +1568,7 @@
           statHash.name = statDef.statName; // localized name
         }
 
-        if (statsWithTiers.indexOf(stats[s]) > -1) {
+        if (statsWithTiers.has(statId)) {
           statHash.normalized = statHash.value > 300 ? 300 : statHash.value;
           statHash.tier = Math.floor(statHash.normalized / 60);
           statHash.tiers = [];
@@ -1512,15 +1577,15 @@
             statHash.remaining -= statHash.tiers[t] = statHash.remaining > 60 ? 60 : statHash.remaining;
           }
           if (data.peerView) {
-            statHash.cooldown = getAbilityCooldown(data.peerView.equipment[0].itemHash, stats[s], statHash.tier);
+            statHash.cooldown = getAbilityCooldown(data.peerView.equipment[0].itemHash, statId, statHash.tier);
           }
           statHash.percentage = Number(100 * statHash.normalized / 300).toFixed();
         } else {
           statHash.percentage = Number(100 * statHash.value / 10).toFixed();
         }
 
-        ret[stats[s]] = statHash;
-      }
+        ret[statId] = statHash;
+      });
       return ret;
     }
     // code above is from https://github.com/DestinyTrialsReport

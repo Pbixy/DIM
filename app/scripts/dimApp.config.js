@@ -11,15 +11,18 @@
     .value('dimState', {
       membershipType: -1,
       active: null,
-      debug: true
+      debug: false
     })
     .value('dimFeatureFlags', {
       // Tags are off in release right now
       tagsEnabled: '$DIM_FLAVOR' !== 'release',
+      compareEnabled: true,
       vendorsEnabled: true,
       qualityEnabled: true,
       // Additional debugging / item info tools
       debugMode: false,
+      // Print debug info to console about item moves
+      debugMoves: false,
       // show changelog toaster
       changelogToaster: '$DIM_FLAVOR' === 'release' || '$DIM_FLAVOR' === 'beta',
 
@@ -67,9 +70,10 @@
 
         console.log('DIM v$DIM_VERSION - Please report any errors to https://www.reddit.com/r/destinyitemmanager');
         if (dimFeatureFlags.changelogToaster) {
+          /* eslint no-constant-condition: 0*/
           dimInfoService.show('changelogv$DIM_VERSION'.replace(/\./gi, ''), {
-            title: 'DIM v$DIM_VERSION Released',
-            view: 'views/changelog-toaster.html?v=v$DIM_VERSION'
+            title: '$DIM_FLAVOR' === 'release' ? 'DIM v$DIM_VERSION Released' : 'Beta has been updated to v$DIM_VERSION!',
+            view: 'views/changelog-toaster' + ('$DIM_FLAVOR' === 'release' ? '' : '-beta') + '.html?v=v$DIM_VERSION'
           });
         }
 
@@ -117,6 +121,8 @@
     .config([
       '$compileProvider',
       function($compileProvider) {
+        // TODO: remove this depenency by fixing component bindings https://github.com/angular/angular.js/blob/master/CHANGELOG.md#breaking-changes-1
+        $compileProvider.preAssignBindingsEnabled(true);
         // Allow chrome-extension: URLs in ng-src
         $compileProvider.imgSrcSanitizationWhitelist(/^\s*((https?|chrome-extension):|data:image\/)/);
       }
@@ -155,6 +161,10 @@
         .state('debugItem', {
           url: "/debugItem/:itemId",
           templateUrl: "views/debugItem.html"
+        })
+        .state('developer', {
+          url: "/developer",
+          templateUrl: "scripts/developer/developer.html"
         });
     });
 })();

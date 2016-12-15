@@ -1,5 +1,5 @@
 <div ng-controller="dimMaterialsExchangeCtrl as vm" class="materials-exchange">
-	<!--<a ui-sref='inventory' class="link"><i class='fa fa-arrow-circle-left'></i>Back to DIM</a>-->
+	<!--<a ui-sref='inventory' class="link"><i class='fa fa-arrow-circle-left'></i><span translate="Help.BackToDIM"></span></a>-->
 
 	<div class="stats-panel">
 
@@ -7,7 +7,7 @@
 
 	<div class="section">
 		<div class="title">
-		<span>Materials Exchange</span>
+		<span translate="MaterialsExchange"></span>
 	</div>
 
 <div class="stats-body">
@@ -32,20 +32,20 @@
 		<div class="faction-info">
       <div class="collapsible-section">
 			<div class="title">
-				<span class="heading">{{vm.activeFaction.label}}</span>
+				<span class="heading">{{vm.activeFaction.faction.factionName}}</span>
 			</div>
 			<table>
 				<tr class="row">
-					<td class="col">Current Rank</td>
-					<td class="col">Current Rep</td>
-					<td class="col">New Rank</td>
-					<td class="col">New Rep</td>
+					<td class="col" translate="MaterialsExchange.CurrentRank"></td>
+					<td class="col" translate="MaterialsExchange.CurrentRep"></td>
+					<td class="col" translate="MaterialsExchange.NewRank"></td>
+					<td class="col" translate="MaterialsExchange.NewRep"></td>
 				</tr>
 				<tr class="row">
 					<td class="col">{{vm.activeFaction.level}}</td>
 					<td class="col">{{vm.activeFaction.progressToNextLevel}}/{{vm.activeFaction.nextLevelAt}}</td>
 					<td class="col">{{vm.newRank}}</td>
-					<td class="col">{{vm.newExperiance}}/{{vm.activeFaction.nextLevelAt}}</td>
+					<td class="col">{{vm.newExperience}}/{{vm.activeFaction.nextLevelAt}}</td>
 				</tr>
 			</table>
 		</div>
@@ -56,7 +56,7 @@
 	</div>
 
 	<div class="mats-panel">
-		<dim-collapsible-section title="Materials on hand">
+		<dim-collapsible-section translate-attr="{ title: 'MaterialsExchange.OnHand' }" title="MaterialsExchange.OnHand">
 			<table>
 				<tbody>
 					<tr>
@@ -89,8 +89,8 @@
 			</table>
 		</dim-collapsible-section>
 
-		<dim-collapsible-section title="Materials from trade" is-collapsed="true">
-			<table>
+		<dim-collapsible-section translate-attr="{ title: 'MaterialsExchange.FromTrade' }" is-collapsed="true" title="MaterialsExchange.FromTrade">
+			<table ng-show="vm.variksMats[0]">
 				<tbody>
 					<tr>
 						<td>
@@ -118,7 +118,7 @@
 				</tbody>
 			</table>
 
-			<table>
+			<table ng-show="vm.gunSmithMats[0]">
 				<tbody>
 					<tr>
 						<td>
@@ -142,7 +142,7 @@
 				</tbody>
 			</table>
 
-			<table>
+			<table ng-show="vm.xurMats[0] && vm.xurMats[1]">
 				<tbody>
 					<tr>
 						<td>
@@ -160,7 +160,7 @@
 				</tbody>
 			</table>
 
-			<table>
+			<table ng-show="vm.erisMats[0] && vm.erisMats[1]">
 				<tbody>
 					<tr>
 						<td>
